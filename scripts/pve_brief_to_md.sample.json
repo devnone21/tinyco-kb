@@ -1,0 +1,24 @@
+{
+  "title": "PVE morning brief — 2026-06-23",
+  "pubDate": "2026-06-23T09:00:00+07:00",
+  "severity": "info",
+  "source": "pve-morning-brief",
+  "host": "jasperlake",
+  "tags": ["daily"],
+  "summary": "All systems nominal; 2 open follow-ups from yesterday.",
+  "metrics": [
+    {
+      "type": "line",
+      "title": "Host CPU % (24 h)",
+      "labels": ["00:00", "06:00", "12:00", "18:00"],
+      "datasets": [{ "label": "CPU %", "data": [8, 14, 22, 16] }]
+    }
+  ],
+  "sections": {
+    "System": "- uptime 8d 2h\n- load 0.40 / 0.35 / 0.30",
+    "Storage": "- `local-lvm` ok, 41 / 137 GB used",
+    "Compute": "- 4 LXC, 0 VM. All running.",
+    "Security": "- 0 failed SSH in last 24 h",
+    "Open items": "- [ ] schedule microcode reboot\n- [ ] retire NAS `silverstone`"
+  }
+}

@@ -1,0 +1,86 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+export async function getStaticPaths() {
+  const knowledge = await getCollection('knowledge', ({ data }) => !data.draft);
+  const updates = await getCollection('updates');
+
+  const tagMap = new Map<string, { knowledge: CollectionEntry<'knowledge'>[]; updates: CollectionEntry<'updates'>[] }>();
+
+  const add = (slug: string, kind: 'knowledge' | 'updates', entry: any) => {
+    if (!tagMap.has(slug)) tagMap.set(slug, { knowledge: [], updates: [] });
+    tagMap.get(slug)![kind].push(entry);
+  };
+
+  for (const e of knowledge) {
+    for (const t of e.data.tags ?? []) add(t, 'knowledge', e);
+  }
+  for (const e of updates) {
+    for (const t of e.data.tags ?? []) add(t, 'updates', e);
+  }
+
+  return [...tagMap.entries()].map(([tag, group]) => ({
+    params: { tag },
+    props: { tag, group },
+  }));
+}
+
+interface Props {
+  tag: string;
+  group: {
+    knowledge: CollectionEntry<'knowledge'>[];
+    updates: CollectionEntry<'updates'>[];
+  };
+}
+const { tag, group } = Astro.props;
+
+const kSorted = [...group.knowledge].sort((a, b) => +b.data.pubDate - +a.data.pubDate);
+const uSorted = [...group.updates].sort((a, b) => +b.data.pubDate - +a.data.pubDate);
+---
+<Base title={`#${tag}`} description={`Entries tagged ${tag}`}>
+  <h1>#{tag}</h1>
+  <p class="meta">
+    {kSorted.length} article{kSorted.length === 1 ? '' : 's'},
+    {' '}{uSorted.length} update{uSorted.length === 1 ? '' : 's'}.
+  </p>
+
+  {kSorted.length > 0 && (
+    <>
+      <h2>Knowledge</h2>
+      <ul class="cards">
+        {kSorted.map((entry) => (
+          <li>
+            <a href={`/kb/${entry.slug}`}>{entry.data.title}</a>
+            <div class="meta">
+              <time datetime={entry.data.pubDate.toISOString()}>
+                {entry.data.pubDate.toLocaleDateString()}
+              </time>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  {uSorted.length > 0 && (
+    <>
+      <h2>Updates</h2>
+      <ul class="cards">
+        {uSorted.map((entry) => (
+          <li class={`severity-${entry.data.severity ?? 'info'}`}>
+            <a href={`/updates/${entry.slug}`}>{entry.data.title}</a>
+            <div class="meta">
+              <time datetime={entry.data.pubDate.toISOString()}>
+                {entry.data.pubDate.toLocaleString()}
+              </time>
+              {entry.data.source && <span class="tag">{entry.data.source}</span>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  <p><a href="/tags">← All tags</a></p>
+</Base>

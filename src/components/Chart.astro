@@ -1,0 +1,45 @@
+---
+// MDX-friendly Chart.js wrapper.
+// Usage:
+//   import Chart from '../../components/Chart.astro';
+//   <Chart type="line" data={...} options={...} height={320} />
+
+interface Props {
+  type: 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'scatter';
+  data: any;            // Chart.js data object
+  options?: any;        // Chart.js options object
+  height?: number;
+  id?: string;
+}
+const {
+  type,
+  data,
+  options = {},
+  height = 300,
+  id = `chart-${Math.random().toString(36).slice(2, 8)}`,
+} = Astro.props;
+
+const mergedOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  ...options,
+};
+---
+<div class="chart-wrap" style={`height:${height}px`}>
+  <canvas id={id} data-chart-type={type}
+          data-chart-data={JSON.stringify(data)}
+          data-chart-options={JSON.stringify(mergedOptions)}></canvas>
+</div>
+
+<script>
+  import { Chart, registerables } from 'chart.js';
+  Chart.register(...registerables);
+
+  const charts = document.querySelectorAll<HTMLCanvasElement>('canvas[data-chart-type]');
+  charts.forEach((canvas) => {
+    const type = canvas.dataset.chartType as any;
+    const data = JSON.parse(canvas.dataset.chartData || '{}');
+    const options = JSON.parse(canvas.dataset.chartOptions || '{}');
+    new Chart(canvas, { type, data, options });
+  });
+</script>

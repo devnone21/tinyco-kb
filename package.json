@@ -1,0 +1,26 @@
+{
+  "name": "kb-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev --host 0.0.0.0",
+    "build": "astro build && pagefind --site dist",
+    "build:astro": "astro build",
+    "preview": "astro preview --host 0.0.0.0",
+    "astro": "astro",
+    "pagefind": "pagefind --site dist"
+  },
+  "dependencies": {
+    "astro": "^5.1.0",
+    "@astrojs/mdx": "^4.0.0",
+    "@astrojs/sitemap": "^3.2.0",
+    "@astrojs/rss": "^4.0.10",
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.7.2",
+    "chart.js": "^4.4.7"
+  },
+  "devDependencies": {
+    "pagefind": "^1.3.0"
+  }
+}

@@ -1,0 +1,92 @@
+---
+title: 'PVE morning brief — 2026-06-22 (sample)'
+pubDate: 2026-06-22T09:00:00+07:00
+source: pve-morning-brief
+severity: info
+tags: [pve, jasperlake, sample]
+---
+
+import Chart from '../../components/Chart.astro';
+
+Sample update demonstrating MDX with an embedded chart. In production this
+file is generated automatically by `scripts/pve_brief_to_md.py` from your
+PVE audit JSON output.
+
+## System
+
+- Host: `jasperlake` · uptime 7d 14h · load avg 0.42 / 0.38 / 0.31
+- PVE version: 7.4-20 (post Phase 1)
+- Kernel: `6.8.12-4-pve`
+- 4 LXC containers, 0 QEMU VMs
+
+## Storage
+
+| Storage | Type | Used | Free | Status |
+|---|---|---|---|---|
+| `local` | dir | 8.2 GB | 12 GB | ok |
+| `local-lvm` | lvmthin | 41 GB | 96 GB | ok |
+| `silverstone` | nfs | — | — | **offline** |
+
+## Compute
+
+CPU utilisation over the last 24 h (host view):
+
+<Chart
+  type="line"
+  height={260}
+  data={{
+    labels: ['00:00','03:00','06:00','09:00','12:00','15:00','18:00','21:00','now'],
+    datasets: [{
+      label: 'CPU %',
+      data: [8, 7, 9, 14, 22, 18, 16, 12, 11],
+      borderColor: '#4f9dff',
+      backgroundColor: 'rgba(79,157,255,0.15)',
+      fill: true,
+      tension: 0.35,
+      pointRadius: 2,
+    }],
+  }}
+  options={{
+    scales: {
+      y: { beginAtZero: true, suggestedMax: 100, ticks: { color: '#9aa3ad' } },
+      x: { ticks: { color: '#9aa3ad' } },
+    },
+    plugins: { legend: { labels: { color: '#e6e8eb' } } },
+  }}
+/>
+
+Memory usage by LXC (current, GiB):
+
+<Chart
+  type="bar"
+  height={220}
+  data={{
+    labels: ['LXC 101 wine*', 'LXC 110 pihole', 'LXC 111 kali*', 'LXC 120 docker'],
+    datasets: [{
+      label: 'Used GiB',
+      data: [0.0, 0.4, 0.0, 3.1],
+      backgroundColor: ['#9aa3ad', '#4f9dff', '#9aa3ad', '#4f9dff'],
+    }],
+  }}
+  options={{
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { color: '#9aa3ad' } },
+              x: { ticks: { color: '#9aa3ad' } } },
+  }}
+/>
+
+*stopped
+
+## Security
+
+- 30+ pending security updates (PVE 7.x EOL)
+- 0 failed SSH logins in last 24 h
+- `tiny-pam-token` API access: PVEAdmin role ✓
+- microcode: installed, **reboot pending** to activate
+
+## Open items
+
+- [ ] Schedule reboot to activate `intel-microcode`
+- [ ] Phase 2 dist-upgrade Bullseye → Bookworm
+- [ ] Decommission / repair NAS `silverstone` (offline since ~2025-05-08)
+- [ ] Decide on LXC 101 (wine) and 111 (kali) — destroy or archive?

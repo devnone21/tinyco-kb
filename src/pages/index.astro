@@ -1,0 +1,49 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+
+const knowledge = (await getCollection('knowledge', ({ data }) => !data.draft))
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate)
+  .slice(0, 5);
+
+const updates = (await getCollection('updates'))
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate)
+  .slice(0, 5);
+---
+<Base title="Tony's KB" description="Personal knowledge base">
+  <h1>📚 Tony's Knowledge Base</h1>
+  <p class="meta">A private KB for notes, runbooks, and live updates from my homelab & projects.</p>
+
+  <h2>Recent knowledge</h2>
+  <ul class="cards">
+    {knowledge.map((entry) => (
+      <li>
+        <a href={`/kb/${entry.slug}`}>{entry.data.title}</a>
+        <div class="meta">
+          <time datetime={entry.data.pubDate.toISOString()}>
+            {entry.data.pubDate.toLocaleDateString()}
+          </time>
+          {entry.data.tags?.map((t) => <span class="tag">{t}</span>)}
+        </div>
+      </li>
+    ))}
+    {knowledge.length === 0 && <li class="meta">No articles yet.</li>}
+  </ul>
+
+  <h2>Latest updates</h2>
+  <ul class="cards">
+    {updates.map((entry) => (
+      <li class={`severity-${entry.data.severity ?? 'info'}`}>
+        <a href={`/updates/${entry.slug}`}>{entry.data.title}</a>
+        <div class="meta">
+          <time datetime={entry.data.pubDate.toISOString()}>
+            {entry.data.pubDate.toLocaleString()}
+          </time>
+          {entry.data.source && <span class="tag">{entry.data.source}</span>}
+          {entry.data.tags?.map((t) => <span class="tag">{t}</span>)}
+        </div>
+      </li>
+    ))}
+    {updates.length === 0 && <li class="meta">No updates yet.</li>}
+  </ul>
+</Base>

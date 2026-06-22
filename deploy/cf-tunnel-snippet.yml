@@ -1,0 +1,26 @@
+# Add this snippet to your existing cloudflared config.yml on the LXC `docker`.
+# Path on host is typically /etc/cloudflared/config.yml or
+# ~/cloudflared/config.yml (depends on how you set it up).
+#
+# Example current config (yours will differ):
+#   tunnel: <your-tunnel-id>
+#   credentials-file: /root/.cloudflared/<tunnel-id>.json
+#   ingress:
+#     - hostname: existing-app.example.com
+#       service: http://existing-upstream:port
+#     - service: http_status:404
+#
+# Add this BEFORE the catch-all 404 rule:
+#
+#   - hostname: kb.example.com               # <-- your public hostname
+#     service: http://kb-site:80             # <-- matches docker-compose service name + port
+#     originRequest:
+#       noTLSVerify: false
+#
+# Then in Cloudflare DNS:
+#   CNAME  kb  <your-tunnel-id>.cfargotunnel.com  (proxied)
+#
+# And in Cloudflare Zero Trust → Access → Applications:
+#   - Self-hosted app on hostname kb.example.com
+#   - IdPs: GitHub + Google
+#   - Allow policy: emails <your list>

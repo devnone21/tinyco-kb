@@ -1,0 +1,33 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const knowledge = await getCollection('knowledge', ({ data }) => !data.draft);
+const updates = await getCollection('updates');
+
+// Collect unique tags with counts
+const counts = new Map<string, number>();
+for (const e of [...knowledge, ...updates]) {
+  for (const t of e.data.tags ?? []) {
+    counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+}
+const tags = [...counts.entries()].sort((a, b) =>
+  b[1] - a[1] || a[0].localeCompare(b[0])
+);
+---
+<Base title="Tags" description="All tags across the knowledge base">
+  <h1>Tags</h1>
+  <p class="meta">{tags.length} tag{tags.length === 1 ? '' : 's'} across knowledge + updates.</p>
+  <ul class="tag-cloud">
+    {tags.map(([tag, n]) => (
+      <li>
+        <a href={`/tags/${tag}`} class="tag">{tag} <small>· {n}</small></a>
+      </li>
+    ))}
+  </ul>
+</Base>
+
+<style>
+  .tag-cloud { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+</style>

@@ -1,0 +1,25 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const entries = (await getCollection('updates'))
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate);
+---
+<Base title="Updates" description="Live updates from automation and manual entries">
+  <h1>Updates</h1>
+  <p class="meta">{entries.length} update{entries.length === 1 ? '' : 's'}.</p>
+  <ul class="cards">
+    {entries.map((entry) => (
+      <li class={`severity-${entry.data.severity ?? 'info'}`}>
+        <a href={`/updates/${entry.slug}`}>{entry.data.title}</a>
+        <div class="meta">
+          <time datetime={entry.data.pubDate.toISOString()}>
+            {entry.data.pubDate.toLocaleString()}
+          </time>
+          {entry.data.source && <span class="tag">{entry.data.source}</span>}
+          {entry.data.tags?.map((t) => <span class="tag">{t}</span>)}
+        </div>
+      </li>
+    ))}
+  </ul>
+</Base>

@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="404 — Not Found" description="That page doesn't exist.">
+  <div class="notfound">
+    <h1>🔍 404</h1>
+    <p class="meta">That page doesn't exist (or it's been moved).</p>
+    <p>
+      <a href="/">← Back home</a>
+      · <a href="/kb">Knowledge</a>
+      · <a href="/updates">Updates</a>
+      · <a href="/search">Search</a>
+    </p>
+  </div>
+</Base>
+
+<style>
+  .notfound {
+    text-align: center;
+    padding: 4rem 1rem;
+  }
+  .notfound h1 {
+    font-size: 5rem;
+    margin: 0 0 1rem;
+  }
+</style>
