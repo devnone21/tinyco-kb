@@ -3,9 +3,21 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Install deps
-COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+# Install deps.
+# - If package-lock.json exists (committed for reproducible CI):
+#     use `npm ci` for deterministic installs.
+# - Otherwise (first build / no lockfile):
+#     fall back to `npm install` so the build doesn't break.
+# To switch to strict mode: run `npm install` locally and commit the
+# generated package-lock.json, then change `npm install` → `npm ci`.
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then \
+      echo ">>> using npm ci (lockfile present)"; \
+      npm ci --no-audit --no-fund; \
+    else \
+      echo ">>> using npm install (no lockfile found)"; \
+      npm install --no-audit --no-fund; \
+    fi
 
 # Build
 COPY . .

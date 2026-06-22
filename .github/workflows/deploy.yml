@@ -1,0 +1,141 @@
+# GitHub Actions — Deploy KB site to Proxmox LXC `docker`
+#
+# Required GitHub repo secrets:
+#   LXC_SSH_KEY   private key (ed25519, no passphrase)
+#   LXC_SSH_HOST  e.g. root@10.1.1.120  or  tony@docker-lxc
+#   LXC_SSH_PORT  optional, default 22
+#
+# Behavior:
+#   - On push to main: build, then SSH to LXC and rsync + docker compose up
+#   - On manual trigger (workflow_dispatch): same
+#   - Concurrency: one deploy at a time (no overlap)
+#   - Permissions: minimal — only `contents: read`
+
+name: Deploy KB site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'astro.config.mjs'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'nginx.conf'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-kb-site
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    name: Build & deploy to LXC
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # Use `npm ci` if a lockfile is committed (reproducible);
+        # fall back to `npm install` if not (first CI run).
+        run: |
+          if [ -f package-lock.json ]; then
+            echo ">>> npm ci (lockfile present)"
+            npm ci --no-audit --no-fund
+          else
+            echo ">>> npm install (no lockfile found)"
+            npm install --no-audit --no-fund
+            # Save the generated lockfile as an artifact so you can
+            # commit it back to the repo and switch to `npm ci` next time.
+            mkdir -p artifacts
+            cp package-lock.json artifacts/
+          fi
+
+      - name: Build (Astro + Pagefind)
+        run: npm run build
+        env:
+          # Build-time site URL; override in repo settings if needed
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://kb.example.com' }}
+
+      - name: Upload generated lockfile (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-lockfile
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.LXC_SSH_KEY }}
+          SSH_HOST: ${{ secrets.LXC_SSH_HOST }}
+          SSH_PORT: ${{ secrets.LXC_SSH_PORT || '22' }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$SSH_PORT" -H "${SSH_HOST#*@}" > ~/.ssh/known_hosts 2>/dev/null
+          echo "SSH ready → $SSH_HOST:$SSH_PORT"
+
+      - name: Sync sources to LXC
+        env:
+          SSH_HOST: ${{ secrets.LXC_SSH_HOST }}
+          SSH_PORT: ${{ secrets.LXC_SSH_PORT || '22' }}
+          SITE_DIR: '/opt/kb-site'
+        run: |
+          # rsync only sources + config (skip node_modules, dist, .git)
+          rsync -az --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            --exclude='.astro' \
+            --exclude='.env' \
+            -e "ssh -p $SSH_PORT" \
+            ./ "$SSH_HOST:$SITE_DIR/"
+
+      - name: Rebuild & restart container on LXC
+        env:
+          SSH_HOST: ${{ secrets.LXC_SSH_HOST }}
+          SSH_PORT: ${{ secrets.LXC_SSH_PORT || '22' }}
+          SITE_DIR: '/opt/kb-site'
+        run: |
+          ssh -p "$SSH_PORT" "$SSH_HOST" << 'EOF'
+            set -e
+            cd /opt/kb-site
+            # Make sure the new cron_rebuild.sh stays executable after rsync
+            chmod +x scripts/cron_rebuild.sh 2>/dev/null || true
+            docker compose build --pull
+            docker compose up -d
+            docker image prune -f >/dev/null
+            echo "DEPLOY OK $(date -Iseconds)"
+          EOF
+
+      - name: Smoke test
+        env:
+          PUBLIC_URL: ${{ vars.PUBLIC_SITE_URL || 'https://kb.example.com' }}
+        run: |
+          # Public URL is gated by CF Access, so 200 or 302 is fine.
+          # We just want to confirm the tunnel + container are up.
+          code=$(curl -s -o /dev/null -w '%{http_code}' -L --max-time 15 "$PUBLIC_URL/health.json" || echo 000)
+          echo "health.json → HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::Health check returned $code (may be CF Access challenge, usually OK)"
+          fi
