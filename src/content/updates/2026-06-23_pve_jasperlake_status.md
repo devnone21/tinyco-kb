@@ -1,3 +1,11 @@
+---
+title: 'PVE jasperlake status — 2026-06-23'
+pubDate: 2026-06-23T09:00:00+07:00
+source: pve-jasperlake-status
+severity: info
+tags: [pve, jasperlake, report]
+---
+
 # PVE jasperlake — Daily Status Report
 
 **Date:** 2026-06-23 (snapshot 17:14 +07)

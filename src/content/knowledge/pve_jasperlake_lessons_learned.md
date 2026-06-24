@@ -1,6 +1,6 @@
 ---
 title: "PVE 7→8 upgrade on jasperlake — lessons learned"
-date: 2026-06-24
+pubDate: 2026-06-24
 category: infrastructure
 tags: [proxmox, pve, upgrade, monitoring, automation]
 status: archived
