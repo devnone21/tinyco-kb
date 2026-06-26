@@ -3,14 +3,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: kb-site
     restart: unless-stopped
     # Cloudflare Tunnel on the host will route a public hostname
     # to http://127.0.0.1:8088 — see deploy/cf-tunnel-snippet.yml.
     ports:
       - "0.0.0.0:8088:80"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health.json"]
       interval: 30s
       timeout: 3s
       retries: 3
